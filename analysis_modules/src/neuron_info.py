@@ -124,8 +124,8 @@ def ntype(n):
         return 'sensory'
     if n in (
         'ADA', 'AIA', 'AIB', 'AIN', 'AIY', 'AIZ', 'AVA', 'AVB', 'AVD', 'AVE',
-        'AVG', 'BDU', 'LUA', 'PVC', 'PVP', 'PVR', 'PVT', 'PVW',
-        'RIA', 'RIB', 'RIF', 'RIG', 'RIH', 'RIM', 'RIR', 'RIP', 'AVJ',
+        'AVG', 'BDU', 'DVC', 'LUA', 'PVC', 'PVP', 'PVR', 'PVT', 'PVW',
+        'RIA', 'RIB', 'RIF', 'RIG', 'RIH', 'RIM', 'RIR', 'RIP',
     ):
         return 'inter'
     if n in (
@@ -135,8 +135,8 @@ def ntype(n):
     ):
         return 'motor'
     if n in (
-        'ADE', 'AIM', 'ALA', 'AVF', 'AVH', 'AVK', 'AVL', 'CEP', 'HSN',
-        'PDE', 'PVQ', 'PVN', 'RIC', 'RID', 'RIS', 'RMG', 'DVC',
+        'ADE', 'AIM', 'ALA', 'AVF', 'AVH', 'AVJ', 'AVK', 'AVL', 'CEP', 'HSN',
+        'PDE', 'PVQ', 'PVN', 'RIC', 'RID', 'RIS', 'RMG',
     ):
         return 'modulatory'
     if n in (

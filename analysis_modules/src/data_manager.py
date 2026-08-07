@@ -38,14 +38,11 @@ class DataManager:
         self.include_muscle = kwargs.get('include_muscle', False)
         self.npair_result = kwargs.get('npair_result', False)
         self.replacements = kwargs.get('replacements', {})
-        self.rename_ds = kwargs.get('rename_ds', True)
 
         self.dirs = {
             'connectome': self.data_path / 'connectomes' / 'individual_cells',
             'contactome': self.data_path / 'contactomes' / 'individual_cells',
             'proximity': self.data_path / 'proximity',
-            'proximity_points_counts': self.data_path / 'proximity_points' / 'counts',
-            'proximity_points_counts_1000': self.data_path / 'proximity_points' / 'counts_1000',
             'skeleton': self.data_path / 'smoothed_skeletons'
         }
 
@@ -53,27 +50,23 @@ class DataManager:
             'connectome': self._list_files(self.dirs['connectome']),
             'contactome': self._list_files(self.dirs['contactome']),
             'proximity': self._list_files(self.dirs['proximity']),
-            'proximity_points_counts': self._list_files(self.dirs['proximity_points_counts']),
-            'proximity_points_counts_1000': self._list_files(self.dirs['proximity_points_counts_1000']),
             'skeleton': self._list_files(self.dirs['skeleton'], ext = '.json'),
         }
 
     def _list_files(self, directory_path, ext = '.csv'):
         """Loads all file paths from a specific Path object."""
-        csv_files = {}
+        files = {}
         if not directory_path.is_dir():
             print(f"Warning: Data directory '{directory_path}' not found.")
-            return csv_files
+            return files
         for filepath in sorted(directory_path.glob(f"*{ext}")):
             name = filepath.stem.split('_')[-1].split('.')[0]
-            if self.rename_ds:
-                name = rename_dataset_dict.get(name, name)
-            csv_files[name] = filepath
-        return csv_files
+            files[name] = filepath
+        return files
     
     def _filter_data_adj(self, df):
         """
-        Filters names in the adjacency matrix
+        Filters names in data formatted as adjacency matrices
 
         Args:
             df (pd.DataFrame): The input adjacency matrix
@@ -83,12 +76,12 @@ class DataManager:
         """
         base_types = ['sensory', 'inter', 'motor', 'modulatory']
 
-        # Keep muscles if specified
+        # Keep muscles
         if self.include_muscle:
             base_types.append('muscle')
         mask = df.index.to_series().apply(lambda x: ntype(x) in base_types)
 
-        # Keep postembryonic neurons if specified
+        # Keep postembryonic neurons
         if not self.include_postemb:
             postemb_mask = ~df.index.to_series().apply(is_postemb)
             mask &= postemb_mask
@@ -175,7 +168,8 @@ class DataManager:
         G = G.astype(int)
         G = G.groupby(level=[0,1]).sum()
 
-        if datatype == 'contactome':
+        # remove duplicates in symmetrical matrices
+        if datatype == 'contactome': 
             index_set = set()
             for i in (G.index.tolist()):
                 index_set.add(tuple(sorted(i)))
@@ -242,39 +236,41 @@ class DataManager:
     
     def get_volume(self):
         """
-        Volume is a direct output from VAST as is therefore not calculated here
+        Volume calculated from segmentation voxels
 
         Units are nm^3
         """
         volume = pd.Series({
-            'L1-1': 140264774520,
-            'L1-2': 219921688822,
-            'L1-3': 204251501760,
-            'L1-4': 206540239200,
-            'L2': 547255631400,
-            'L3': 564580826072,
+            'L1-1': 84080778240,
+            'L1-2': 148189059480,
+            'L1-3': 136209323520,
+            'L1-4': 139844505600,
+            'L2': 355876392960,
+            'L3': 408271907190,
             'adult-1': None,
-            'adult-2': 1319942545440,
-            'dauer-1': 1134361541000,
-            'dauer-2': 874376648400,
-            'dauer-3': None,
+            'adult-2': 1033025495040,
+            'dauer-1': 551742182400,
+            'dauer-2': 554858521600,
+            'dauer-3': 326481722000,
             'dauer-daf2': None,
         })
         return volume
-    
-    def get_proximity_points(self, datatype='counts', **kwargs):
+
+    def specify_proximity_points_dir(self, directory_path, ext = '.csv'):
+        """Proximity point matrices are downloaded separately for speed and convenience."""
+        self.dirs['proximity_points'] = Path(directory_path)
+        self.files['proximity_points'] = self._list_files(self, directory_path, ext)
+        print(f"Set proximity points directory as {directory_path}.")
+
+    def get_proximity_points(self, **kwargs):
         """
         Gets a dictionary of DataFrames representing proximity points.
         """
-        assert datatype in ['counts', 'counts_1000']
+        datasets = kwargs.get('datasets', ['L1-1'])
+        if type(datasets) == str:
+            datasets = list(datasets)
 
-        datasets = kwargs.get('datasets', [
-            'L1-1', 'L1-2', 'L1-3', 'L1-4',
-            'L2', 'L3', 'adult-2',
-            'dauer-1', 'dauer-2'
-        ])
-
-        csv_files = self.files[f'proximity_points_{datatype}']
+        csv_files = self.files['proximity_points']
 
         dfs = {}
         
@@ -292,27 +288,3 @@ class DataManager:
                 df['neuron'] = df['neuron'].apply(npair)
             dfs[ds] = self._filter_prox_points(df)
         return dfs
-    
-if __name__ == "__main__":
-    data_manager = DataManager(
-        data_path='data',
-        include_postemb=True,
-        include_muscle=True,
-        npair_result=False
-    )
-    connectome_edgelist = data_manager.get_data_edgelist(datatype='contactome')
-
-    two_dauers = ['dauer-1','dauer-2']
-    three_dauers = ['dauer-1','dauer-2','dauer-3']
-    connectome_edgelist['two_dauers'] = connectome_edgelist.loc[:,two_dauers].astype(bool).sum(axis=1)==2
-    connectome_edgelist['three_dauers'] = connectome_edgelist.loc[:,three_dauers].astype(bool).sum(axis=1)==3
-
-    connectome_edgelist.to_csv('contactome_edgelist_ind.csv')
-
-    # print(connectome_edgelist.head())
-
-    # adj = data_manager.get_data_adj(datatype='proximity')
-    # print(adj['adult-2'].head())
-
-    # skeleton_lengths = data_manager.get_cable_lengths()
-    # print(skeleton_lengths)

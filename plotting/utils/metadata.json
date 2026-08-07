@@ -1,7 +1,7 @@
 {
   "L1-1": {
     "id": 0,
-    "internal_name": "dataset1",
+    "internal_name": "L1-1",
     "plot_name": "L1 0hr",
     "stage": "L1",
     "age_hours": 0,
@@ -9,7 +9,7 @@
   },
   "L1-2": {
     "id": 1,
-    "internal_name": "dataset2",
+    "internal_name": "L1-2",
     "plot_name": "L1 5hr",
     "stage": "L1",
     "age_hours": 5,
@@ -17,7 +17,7 @@
   },
   "L1-3": {
     "id": 2,
-    "internal_name": "dataset3",
+    "internal_name": "L1-3",
     "plot_name": "L1 8hr",
     "stage": "L1",
     "age_hours": 8,
@@ -25,7 +25,7 @@
   },
   "L1-4": {
     "id": 3,
-    "internal_name": "dataset4",
+    "internal_name": "L1-4",
     "plot_name": "L1 16hr",
     "stage": "L1",
     "age_hours": 16,
@@ -33,7 +33,7 @@
   },
   "L2": {
     "id": 4,
-    "internal_name": "dataset5",
+    "internal_name": "L2",
     "plot_name": "L2",
     "stage": "L2",
     "age_hours": 23,
@@ -41,7 +41,7 @@
   },
   "L3": {
     "id": 5,
-    "internal_name": "dataset6",
+    "internal_name": "L3",
     "plot_name": "L3",
     "stage": "L3",
     "age_hours": 27,
@@ -49,7 +49,7 @@
   },
   "adult-1": {
     "id": 6,
-    "internal_name": "dataset7",
+    "internal_name": "adult-1",
     "plot_name": "Adult 1",
     "stage": "adult",
     "age_hours": 45,
@@ -57,7 +57,7 @@
   },
   "adult-2": {
     "id": 7,
-    "internal_name": "dataset8",
+    "internal_name": "adult-2",
     "plot_name": "Adult 2",
     "stage": "adult",
     "age_hours": 45,
@@ -81,7 +81,7 @@
   },
   "dauer-3": {
     "id": 10,
-    "internal_name": "FIB-SEM_dauer",
+    "internal_name": "dauer-3",
     "plot_name": "Dauer 3",
     "stage": "dauer",
     "age_hours": null,
