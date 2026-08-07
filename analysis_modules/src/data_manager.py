@@ -4,21 +4,6 @@ import pandas as pd
 from pathlib import Path
 from ..src.neuron_info import ntype, npair, is_postemb
 
-rename_dataset_dict = {
-    'dataset1': 'L1-1',
-    'dataset2': 'L1-2',
-    'dataset3': 'L1-3',
-    'dataset4': 'L1-4',
-    'dataset5': 'L2',
-    'dataset6': 'L3',
-    'dataset7': 'adult-1',
-    'dataset8': 'adult-2',
-    'dauer-1': 'dauer-1',
-    'dauer-2': 'dauer-2',
-    'dauer-FIB': 'dauer-3',
-    'dauer-daf2': 'dauer-daf2',
-}
-
 class DataManager:
     def __init__(self, data_path, **kwargs):
         """
@@ -31,7 +16,6 @@ class DataManager:
                 - include_muscle (bool): Whether to include muscle cells. Default: False
                 - npair_result (bool): Whether to pair neurons. Default: False
                 - replacements (dict): Dictionary of neuron names to replace. Default: {}
-                - rename_ds (bool): Whether to replace dataset names. Default: True
         """
         self.data_path = Path(data_path)
         self.include_postemb = kwargs.get('include_postemb', True)
@@ -217,7 +201,6 @@ class DataManager:
             match = re.search(r'^[^_]*', f.stem)
             with open(f, 'r') as file:
                 data = json.load(file)
-            skeleton_info[rename_dataset_dict[match.group(0)]] = data
 
         exclude_regex = ['exc']
         if not self.include_muscle:
