@@ -1,0 +1,98 @@
+{
+  "L1-1": {
+    "id": 0,
+    "internal_name": "dataset1",
+    "plot_name": "L1 0hr",
+    "stage": "L1",
+    "age_hours": 0,
+    "age_visual": 0
+  },
+  "L1-2": {
+    "id": 1,
+    "internal_name": "dataset2",
+    "plot_name": "L1 5hr",
+    "stage": "L1",
+    "age_hours": 5,
+    "age_visual": 5
+  },
+  "L1-3": {
+    "id": 2,
+    "internal_name": "dataset3",
+    "plot_name": "L1 8hr",
+    "stage": "L1",
+    "age_hours": 8,
+    "age_visual": 8
+  },
+  "L1-4": {
+    "id": 3,
+    "internal_name": "dataset4",
+    "plot_name": "L1 16hr",
+    "stage": "L1",
+    "age_hours": 16,
+    "age_visual": 16
+  },
+  "L2": {
+    "id": 4,
+    "internal_name": "dataset5",
+    "plot_name": "L2",
+    "stage": "L2",
+    "age_hours": 23,
+    "age_visual": 23
+  },
+  "L3": {
+    "id": 5,
+    "internal_name": "dataset6",
+    "plot_name": "L3",
+    "stage": "L3",
+    "age_hours": 27,
+    "age_visual": 27
+  },
+  "adult-1": {
+    "id": 6,
+    "internal_name": "dataset7",
+    "plot_name": "Adult 1",
+    "stage": "adult",
+    "age_hours": 45,
+    "age_visual": 45
+  },
+  "adult-2": {
+    "id": 7,
+    "internal_name": "dataset8",
+    "plot_name": "Adult 2",
+    "stage": "adult",
+    "age_hours": 45,
+    "age_visual": 48
+  },
+  "dauer-1": {
+    "id": 8,
+    "internal_name": "dauer-1",
+    "plot_name": "Dauer 1",
+    "stage": "dauer",
+    "age_hours": null,
+    "age_visual": 1
+  },
+  "dauer-2": {
+    "id": 9,
+    "internal_name": "dauer-2",
+    "plot_name": "Dauer 2",
+    "stage": "dauer",
+    "age_hours": null,
+    "age_visual": 2
+  },
+  "dauer-3": {
+    "id": 10,
+    "internal_name": "FIB-SEM_dauer",
+    "plot_name": "Dauer 3",
+    "stage": "dauer",
+    "age_hours": null,
+    "age_visual": 3
+  },
+  "dauer-daf2": {
+    "id": 11,
+    "internal_name": "dauer-daf2",
+    "plot_name": "Dauer 4",
+    "stage": "dauer",
+    "age_hours": null,
+    "age_visual": 4
+  }
+}

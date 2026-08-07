@@ -1,0 +1,90 @@
+{
+  "L1-1": {
+    "id": 0,
+    "filename": "connectome_dataset1.csv",
+    "catmaid_name": "SEM_L1_3",
+    "stage": "L1",
+    "age_hours": 0,
+    "age_visual": 0
+  },
+  "L1-2": {
+    "id": 1,
+    "filename": "connectome_dataset2.csv",
+    "catmaid_name": "TEM_L1_5",
+    "stage": "L1",
+    "age_hours": 5,
+    "age_visual": 5
+  },
+  "L1-3": {
+    "id": 2,
+    "filename": "connectome_dataset3.csv",
+    "catmaid_name": "SEM_L1_4",
+    "stage": "L1",
+    "age_hours": 8,
+    "age_visual": 8
+  },
+  "L1-4": {
+    "id": 3,
+    "filename": "connectome_dataset4.csv",
+    "catmaid_name": "SEM_L1_2",
+    "stage": "L1",
+    "age_hours": 16,
+    "age_visual": 16
+  },
+  "L2": {
+    "id": 4,
+    "filename": "connectome_dataset5.csv",
+    "catmaid_name": "SEM_L2_2",
+    "stage": "L2",
+    "age_hours": 23,
+    "age_visual": 23
+  },
+  "L3": {
+    "id": 5,
+    "filename": "connectome_dataset6.csv",
+    "catmaid_name": "TEM_L3",
+    "stage": "L3",
+    "age_hours": 27,
+    "age_visual": 27
+  },
+  "adult-1": {
+    "id": 6,
+    "filename": "connectome_dataset7.csv",
+    "catmaid_name": "TEM_adult",
+    "stage": "adult",
+    "age_hours": 45,
+    "age_visual": 45
+  },
+  "adult-2": {
+    "id": 7,
+    "filename": "connectome_dataset8.csv",
+    "catmaid_name": "SEM_adult",
+    "stage": "adult",
+    "age_hours": 45,
+    "age_visual": 46
+  },
+  "dauer-1": {
+    "id": 8,
+    "filename": "connectome_dauer-1.csv",
+    "catmaid_name": "SEM_dauer_1",
+    "stage": "dauer",
+    "age_hours": null,
+    "age_visual": 50
+  },
+  "dauer-2": {
+    "id": 9,
+    "filename": "connectome_dauer-2.csv",
+    "catmaid_name": "SEM_dauer_2",
+    "stage": "dauer",
+    "age_hours": null,
+    "age_visual": 51
+  },
+  "dauer-daf2": {
+    "id": 10,
+    "filename": "connectome_dauer-daf2.csv",
+    "catmaid_name": "dauer_daf-2",
+    "stage": "dauer",
+    "age_hours": null,
+    "age_visual": 52
+  }
+}
