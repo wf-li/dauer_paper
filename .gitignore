@@ -1,7 +1,7 @@
 # Large derivative folders
-.data/proximity_points/
-.data/smoothed_skeletons/
-.figures/
+data/proximity_points/
+data/smoothed_skeletons/
+figures/
 
 # Python
 __pycache__/
