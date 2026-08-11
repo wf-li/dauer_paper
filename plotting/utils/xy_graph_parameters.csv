@@ -2,7 +2,6 @@ variable_name,ylabel,y_axis_min,y_axis_max,n_yticks
 connections,No. of Connections,0,1500,4
 contacts,No. of Contacts,0,4000,5
 synapses,No. of Synapses,0,9000,4
-synapse_over_contact,Synapses/Contact,0,3,4
 cable_length,Neurite length (mm),0,12,4
 volume,Nerve ring volume,0,1500,4
 contact_surface,Neurite surface area,0,6000,4
