@@ -9,15 +9,12 @@ from adjustText import adjust_text
 
 class Plotter:
     def __init__(self, output_path='results'):
-        """
-        Initializes the plotter, setting up the output directory and Matplotlib styles.
-        """
         self.output_path = output_path
         if not os.path.exists(output_path):
             os.makedirs(output_path)
             print(f"Created directory: {output_path}")
         plt.rcParams['font.family'] = 'sans-serif'
-        plt.rcParams['font.sans-serif'] = ['Arial']
+        plt.rcParams['font.sans-serif'] = ['Arial', 'DejaVu Sans', 'sans-serif']
         plt.rc('xtick', labelsize=10)
         plt.rc('ytick', labelsize=12)
         plt.rc('axes', labelsize=10)
@@ -95,7 +92,6 @@ class Plotter:
             **kwargs: Additional keyword arguments passed to ax.boxplot().
                       Example: showfliers=False
         """
-        # --- 1. Setup Figure and Colors ---
         fig, ax = plt.subplots(figsize=(8, 5), dpi=300)
         
         try:
@@ -106,7 +102,6 @@ class Plotter:
             cmap = cm.get_cmap('tab10')
             colors = [cmap(i) for i in range(len(groupings))]
 
-        # --- 2. Prepare data, positions, and labels ---
         data_to_plot = []    # List of arrays, one for each box
         box_positions = []   # X-position for each box
         box_colors = []      # Color for each box
@@ -142,7 +137,7 @@ class Plotter:
             # Add the extra gap *after* a group is plotted
             current_pos += group_gap
 
-        # --- 3. Plot the boxplots ---
+        # --- Plot the boxplots ---
         
         # Set default 'showfliers' to False if not provided
         if 'showfliers' not in kwargs:
@@ -156,7 +151,6 @@ class Plotter:
             **kwargs
         )
 
-        # --- 4. Style the boxplots ---
         # Color the boxes
         for patch, color in zip(bplot['boxes'], box_colors):
             patch.set_facecolor(color)
@@ -174,7 +168,7 @@ class Plotter:
                 line.set_color('black')
                 line.set_linewidth(self.linewidth / 2)
 
-        # --- 5. Style the Axes (using reference style) ---
+        # Style the Axes
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_linewidth(self.linewidth)
@@ -463,29 +457,29 @@ class Plotter:
         cmap = kwargs.get('cmap', 'tab10')
         size = kwargs.get('size', 100)
 
-        # Plotting
-        fig, ax = plt.subplots(figsize=(5, 3)) 
-
-        scatter = ax.scatter(
+        fig, ax = plt.subplots(figsize=(5, 3))
+        ax.scatter(
             xs, ys,
             c=clabels, cmap=cmap, s=size
         )
 
-        # Create a list to hold the text objects
-        texts = []
-        for i, txt in enumerate(labels):
-            texts.append(
-                ax.text(xs[i], ys[i],
-                txt, ha = 'center', va = 'center', size = 8)
-            )
-
-        adjust_text(texts, expand=(1.2, 1.5), objects = scatter)
+        if labels:
+            texts = []
+            for i, txt in enumerate(labels):
+                texts.append(
+                    ax.text(xs[i], ys[i],
+                    txt, ha = 'center', va = 'center', size = 8)
+                )
 
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
         ax.get_yaxis().set_ticks([])
         ax.get_xaxis().set_ticks([])
         ax.spines[['right','top']].set_visible(False)
+        if save_as:
+            plt.savefig(save_as, dpi=300, bbox_inches='tight')
+        if show_plot:
+            plt.show()
 
         self._save_as(save_as, dpi=300, show=show_plot)
 
