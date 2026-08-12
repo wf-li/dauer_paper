@@ -1,5 +1,6 @@
 import re
 import json
+import numpy as np
 import pandas as pd
 from pathlib import Path
 from ..src.neuron_info import ntype, npair, is_postemb
@@ -111,14 +112,17 @@ class DataManager:
         
         return df.loc[valid_indices, valid_columns]
     
-    def adj_to_edgelist(self, df):
+    def adj_to_edgetable(self, df):
         """
         Converts an adjacency matrix to an DataFrame of edge information for each dataset.
         """
         df = self._filter_data_adj(df)
-        df.reset_index(inplace=True)
-        df.columns.values[0] = 'index'
-        df = df.melt(id_vars="index")
+        df = (
+            df.rename_axis(index="index", columns="variable")
+            .stack()
+            .rename("value")
+            .reset_index()
+        )
 
         df["variable"] = df["variable"].replace(self.replacements)
         df["index"] = df["index"].replace(self.replacements)
@@ -132,9 +136,9 @@ class DataManager:
         df.index = df.index.set_names(("pre","post"))
         return df
     
-    def get_data_edgelist(self, datatype='connectome'):
+    def get_data_edgetable(self, datatype='connectome'):
         """
-        Gets the combined edgelist for all datasets.
+        Gets the combined edgetable for all datasets.
         """
         assert datatype in self.files.keys()
 
@@ -143,7 +147,7 @@ class DataManager:
         dfs = []
         for key, value in csv_files.items():
             df = pd.read_csv(value, index_col=0)
-            df = self.adj_to_edgelist(df)
+            df = self.adj_to_edgetable(df)
             df = df[df.value > 0]
             df = df.rename(columns={"value": key})
             dfs.append(df)
@@ -190,6 +194,26 @@ class DataManager:
                 df = df.T.groupby(df.columns).sum().T
             dfs[key] = df
         return dfs
+
+    def get_drive_edgetable(self):
+        """
+        Gets the synapse drive for all datasets.
+        """
+        con_el = self.get_data_edgetable('connectome')
+        con_el = np.sqrt(con_el)
+        prox_el = self.get_data_edgetable('proximity')
+
+        # filter proximity < 10 points
+        prox_el[prox_el<10]=0
+        prox_el_invert = prox_el.swaplevel('pre', 'post')
+        prox_el_invert.index.names = ['pre', 'post']
+        prox_el_invert = prox_el_invert.query("pre != post")
+        prox_undirected = pd.concat([prox_el, prox_el_invert]).sort_index()
+        prox_el = prox_undirected.groupby(['pre', 'post']).sum()
+        prox_el = prox_el.replace(0,np.nan)
+        prox_el = np.log(prox_el)
+        drive = con_el / prox_el
+        return drive
     
     def get_cable_lengths(self):
         """

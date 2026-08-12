@@ -32,7 +32,6 @@ data['plot_name'] = data.index.map(plot_names)
 data['type'] = data.index.map(lambda x: 'dauer' if metadata[x]['stage']=='dauer' else 'nondauer')
 data['timepoint'] = data.index.map(lambda x: metadata[x]['age_hours'] if metadata[x]['stage']!='dauer' else np.nan)
 
-# plot_metric = 'synapse_over_contact_surface'
 for plot_metric in params['variable_name'].values:
     filt = params['variable_name']==plot_metric
     ymin = params[filt]['y_axis_min'].values[0]
@@ -48,16 +47,8 @@ for plot_metric in params['variable_name'].values:
     if plot_metric == 'volume':
         data[plot_metric] = (data[plot_metric])/1000000000
         ylabel = f'{ylabel} (um$^3$)'
-    # if plot_metric=='synapse_over_contact':
-    #     data['synapse_over_contact'] = data['synapses']/data['contacts']
-    if plot_metric=='synapses_over_cable_length':
-        # data['synapse_over_contact_surface'] = data['synapses']/(data['contact_surface']/1000000)
-        ylabel = 'Synapse/Neurite Length (um)'
-    if plot_metric=='synapses_over_contact_area':
-        # data['synapse_over_contact_surface'] = data['synapses']/(data['contact_surface']/1000000)
-        ylabel = 'Synapse/Contact Area (um$^2$)'
 
-    # Filter for control data
+    # Filter for nondauer data
     filt_nondauer = (data['type'] == 'nondauer') & ~np.isnan(data[plot_metric])
     x_nondauer = data[filt_nondauer]['timepoint'].values
     y_nondauer = data[filt_nondauer][plot_metric].values
