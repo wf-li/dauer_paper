@@ -360,12 +360,10 @@ class Plotter:
             'no_synapse': 'grey',
             'nan': 'grey'
         }
-        color_map = kwargs.get('color_map',default_color_map)
-        norm = kwargs.get('norm', None)
-        figsize = kwargs.get('figsize', (5.5,3))
-        flip = kwargs.get('flip', False)
-        s = kwargs.get('s', 10)
-        alpha = kwargs.get('alpha', 1)
+        color_map = kwargs.pop('color_map',default_color_map)
+        norm = kwargs.pop('norm', None)
+        figsize = kwargs.pop('figsize', (5.5,3))
+        flip = kwargs.pop('flip', False)
 
         x_pos, y_pos, labels_out = stack_binned(
             loadings, bin_width=bin_width, classes=classes, 
@@ -378,8 +376,8 @@ class Plotter:
         if type(color_map) == dict:
             c = [color_map[c] for c in labels_out]
             plt.scatter(
-                x_pos, y_pos,
-                c=c, s=s, alpha=alpha
+                x_pos, y_pos, c=c,
+                **kwargs
             )
         elif type(color_map) == colors.LinearSegmentedColormap:
             assert norm is not None # need norm for centered color
@@ -388,9 +386,7 @@ class Plotter:
                 c=x_pos,
                 cmap=color_map,
                 norm=norm,
-                s=10,
-                alpha=1,
-                edgecolors='none'
+                **kwargs
             )
         ax = plt.gca()
         ax.spines[['top', 'right']].set_visible(False)
@@ -680,6 +676,7 @@ def stack_binned(x, bin_width, classes=None, class_order=None):
     class label for each plotted point -- all aligned to each other.
     """
     x = np.asarray(x, dtype=float)
+    classes_out = np.array([])
 
     lo = x.min()
     bin_idx = np.floor((x - lo) / bin_width).astype(int)
@@ -689,7 +686,7 @@ def stack_binned(x, bin_width, classes=None, class_order=None):
     y_pos = np.empty_like(x)
     out = 0
 
-    if classes.size > 0:
+    if classes is not None:
         classes = np.asarray(classes)
         if class_order is None:
             class_order = list(np.unique(classes))
@@ -698,15 +695,13 @@ def stack_binned(x, bin_width, classes=None, class_order=None):
 
     for b in np.unique(bin_idx):
         members = np.where(bin_idx == b)[0]
-        if classes.size > 0:
+        if classes is not None:
             members = sorted(members, key=lambda i: rank[classes[i]])
         for level, i in enumerate(members):
             x_pos[out] = bin_center[i]
             y_pos[out] = level
-            if classes.size > 0:
+            if classes is not None:
                 classes_out[out] = classes[i]
             out += 1
             
-    if classes.size==0:
-        return x_pos, y_pos
     return x_pos, y_pos, classes_out

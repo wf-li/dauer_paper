@@ -54,6 +54,7 @@ for datatype in ['connectome','proximity']:
         bin_width,
         classes = labels,
         class_order = plot_classes[datatype]['classes'],
+        color_map = color_map,
         save_as=f'{datatype}_loadings',
         show_plot=True,
         flip=False,
