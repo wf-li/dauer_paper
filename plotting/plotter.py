@@ -474,10 +474,65 @@ class Plotter:
         ax.get_yaxis().set_ticks([])
         ax.get_xaxis().set_ticks([])
         ax.spines[['right','top']].set_visible(False)
-        if save_as:
-            plt.savefig(save_as, dpi=300, bbox_inches='tight')
-        if show_plot:
-            plt.show()
+
+        self._save_as(save_as, dpi=300, show=show_plot)
+
+    def plot_pca_loadings(
+            self, loadings,
+            bin_width=0.005,
+            classes = None, class_order = None,
+            save_as = 'pca_loadings', show_plot=False,
+            **kwargs):
+        """
+        Plot individual loadings as a stacked dots in a
+        histogram-like fashion.
+        """
+        default_color_map = {
+            'dauer_increased': '#ed2024',
+            'maintained': 'black',
+            'dauer_decreased': '#abdbee',
+            'variable': 'grey',
+            'late_postembryonic': 'grey',
+            'no_synapse': 'grey',
+            'nan': 'grey'
+        }
+        color_map = kwargs.get('color_map',default_color_map)
+        norm = kwargs.get('norm', None)
+        figsize = kwargs.get('figsize', (5.5,3))
+        flip = kwargs.get('flip', False)
+        s = kwargs.get('s', 10)
+        alpha = kwargs.get('alpha', 1)
+
+        data_range = loadings.max() - loadings.min()
+        bin_width  = data_range * 0.005        # column width; raise for fewer/wider bars
+
+        x_pos, y_pos, labels_out = stack_binned(
+            loadings, bin_width=bin_width, classes=classes, 
+            class_order=class_order,   # bottom -> top order in each column
+        )
+        if flip:
+            x_pos = -x_pos
+
+        plt.figure(figsize=figsize)
+        if type(color_map) == dict:
+            c = [color_map[c] for c in labels_out]
+            plt.scatter(
+                x_pos, y_pos,
+                c=c, s=s, alpha=alpha
+            )
+        elif type(color_map) == colors.LinearSegmentedColormap:
+            assert norm is not None # need norm for centered color
+            plt.scatter(
+                x_pos, y_pos,
+                c=x_pos,
+                cmap=color_map,
+                norm=norm,
+                s=10,
+                alpha=1,
+                edgecolors='none'
+            )
+        ax = plt.gca()
+        ax.spines[['top', 'right']].set_visible(False)
 
         self._save_as(save_as, dpi=300, show=show_plot)
 
@@ -753,3 +808,44 @@ class Plotter:
         ax1.patch.set_visible(False) # Make ax1 transparent
 
         self._save_as(save_as, dpi=300)
+
+def stack_binned(x, bin_width, classes=None, class_order=None):
+    """
+    Bin 1D values into fixed-width x-columns and stack them into a
+    histogram-like swarm. Within each column points are grouped by class
+    (so colors stay contiguous) and fill from the bottom up (lowest free slot).
+
+    Returns x_pos (bin centers), y_pos (0-based stack height), and the
+    class label for each plotted point -- all aligned to each other.
+    """
+    x = np.asarray(x, dtype=float)
+
+    lo = x.min()
+    bin_idx = np.floor((x - lo) / bin_width).astype(int)
+    bin_center = lo + (bin_idx + 0.5) * bin_width
+
+    x_pos = np.empty_like(x)
+    y_pos = np.empty_like(x)
+    out = 0
+
+    if classes.size > 0:
+        classes = np.asarray(classes)
+        if class_order is None:
+            class_order = list(np.unique(classes))
+        rank = {c: i for i, c in enumerate(class_order)}
+        classes_out = np.empty(len(x), dtype=classes.dtype)
+
+    for b in np.unique(bin_idx):
+        members = np.where(bin_idx == b)[0]
+        if classes.size > 0:
+            members = sorted(members, key=lambda i: rank[classes[i]])
+        for level, i in enumerate(members):
+            x_pos[out] = bin_center[i]
+            y_pos[out] = level
+            if classes.size > 0:
+                classes_out[out] = classes[i]
+            out += 1
+            
+    if classes.size==0:
+        return x_pos, y_pos
+    return x_pos, y_pos, classes_out

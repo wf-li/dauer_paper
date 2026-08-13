@@ -1,42 +1,62 @@
 import numpy as np
 import json
-import matplotlib.pyplot as plt
+from pathlib import Path
 from matplotlib.colors import ListedColormap
 from plotter import Plotter
 
-plot_metric = 'connectome'
-output_path = f'figures/pca'
+pca_root = Path('../analysis_modules/pca')
+pca_components = 2
 
-input_path = f'analysis_modules/pca_contribution/outputs/pca_{plot_metric}.json'
-metadata_path = 'plotting/utils/metadata.json'
-use_kmeans_labels=False
-
-with open(input_path, 'r') as f:
-    data = json.load(f)
-with open(metadata_path, 'r') as f:
-    metadata = json.load(f)
-
-data['features'] = np.array(data['features'])
-
-if use_kmeans_labels:
-    clabels = data['cluster_labels']
-else:
-    clabels = [
-        1 if metadata[label]['stage'] == 'dauer' else 0 for label in data['labels'] 
+dataset_selection = {
+    'connectome_all': [
+        'L1-1','L1-2','L1-3','L1-4',
+        'L2','L3','adult-1','adult-2',
+        'dauer-1','dauer-2','dauer-daf2'
+    ],
+    'connectome': [
+        'L2','L3','adult-1','adult-2',
+        'dauer-1','dauer-2','dauer-daf2'
+    ],
+    'proximity': [
+        'L2','L3','adult-2',
+        'dauer-1','dauer-2','dauer-3'
+    ],
+    'drive': [
+        'L2','L3','adult-2','dauer-1','dauer-2'
     ]
-labels = [
-    label if metadata[label]['stage'] == 'L1' else metadata[label]['plot_name'] for label in data['labels'] 
-]
+}
 
-cmap = ListedColormap(['k','#90D5FF'])
-s= 100
+output_path = Path('figures/pca')
+if not output_path.exists():
+    output_path.mkdir(parents=True, exist_ok=True)
+    print(f"Created directory: {output_path}")
 
-xlabel = f'PC1 ({data['explained_variance'][0]:.2%} variance)'
-ylabel = f'PC2 ({data['explained_variance'][1]:.2%} variance)'
+for datatype in dataset_selection.keys():
+    input_file = Path(f'pca_{datatype}.json')
+    input_path = pca_root / input_file
+    use_kmeans_labels=True
 
-plotter = Plotter(output_path = output_path)
-plotter.plot_pca(
-    data['features'][:, 0], data['features'][:, 1],
-    xlabel, ylabel, labels, save_as = f'pca_{plot_metric}',
-    cmap = cmap, clabels = clabels, size = s, show_plot=True
-)
+    with open(input_path, 'r') as f:
+        data = json.load(f)
+    data['features'] = np.array(data['features'])
+    labels = None
+    # labels = data['labels']
+
+    cmap = ListedColormap(['k','#FF0000'])
+    s= 100
+
+    xlabel = f'PC1 ({data['explained_variance'][0]:.2%} variance)'
+    ylabel = f'PC2 ({data['explained_variance'][1]:.2%} variance)'
+
+
+    figure_generator = Plotter(output_path='figures/pca')
+    figure_generator.plot_pca(
+        data['features'][:,0],
+        data['features'][:,1],
+        xlabel,
+        ylabel,
+        labels=labels,
+        clabels=data['cluster_labels'] if use_kmeans_labels else None,
+        cmap=cmap,
+        save_as=f'pca_{datatype}',
+    )

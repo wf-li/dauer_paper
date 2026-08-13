@@ -195,9 +195,12 @@ class DataManager:
             dfs[key] = df
         return dfs
 
-    def get_drive_edgetable(self):
+    def get_drive_edgetable(
+            self, ds=['L2','L3','adult-2','dauer-1','dauer-2'],
+            consistent=True):
         """
-        Gets the synapse drive for all datasets.
+        Gets the synapse drive for all datasets or
+        selected datasets ds if consistent is True.
         """
         con_el = self.get_data_edgetable('connectome')
         con_el = np.sqrt(con_el)
@@ -213,6 +216,9 @@ class DataManager:
         prox_el = prox_el.replace(0,np.nan)
         prox_el = np.log(prox_el)
         drive = con_el / prox_el
+        if consistent: # proximity value > 0 in all datasets
+            contact_rule = drive[drive[ds].isna().sum(axis=1)==0].index
+            drive = drive.loc[drive.index.isin(contact_rule),ds]
         return drive
     
     def get_cable_lengths(self):

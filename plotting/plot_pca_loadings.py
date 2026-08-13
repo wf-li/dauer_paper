@@ -1,52 +1,48 @@
-import json
-import numpy as np
+import pandas as pd
+from pathlib import Path
 from plotter import Plotter
 
-datatype = 'contactome'
-plot_type = 'both' # circular, linear  or both
-plot_component = 'PC1' # PC1, PC2, or both
-n_features_linear = 40
-n_features_circular = 20
+datatype = 'connectome'
 
-output_path = 'figures/pca'
-output_file_linear = f"loadings_{datatype}_{plot_component}"
-output_file_circle = f'{datatype}_loadings_circular_{plot_component}'
+loading_path = Path('analysis_modules/pca/outputs')
+loading_file = Path(f'{datatype}_loadings.csv')
+classification_path = Path('data/connectomes/metadata/synapse_neighborhood_classification_table.csv')
 
-input_path = f'analysis_modules/pca_contribution/outputs/pca_{datatype}.json'
+loading_df = pd.read_csv(loading_path / loading_file, index_col=[0,1])
 
-with open(input_path, 'r') as f:
-    data = json.load(f)
+acceptable_classes = [
+    'dauer_increased','dauer_decreased','maintained',#'variable'
+]
+class_data = pd.read_csv(classification_path, index_col=[0,1])
 
-loadings = np.array(data['loadings'])
-feature_labels = np.array(data['edge_labels'])
+acceptable_index = class_data[class_data['connectivity_3_dauer'].isin(acceptable_classes)].index
+overlap = loading_df.index.intersection(acceptable_index)
 
-if plot_component == 'PC1':
-    plot_pc = 0
-    separate_circular_pc = True
-elif plot_component == 'PC2':
-    plot_pc = 1
-    separate_circular_pc = True
-elif plot_component == 'both':
-    if plot_type == 'linear':
-        raise ValueError("plot_type 'linear' plots only PC1 or PC2, not both")
-    plot_pc=[0,1]
-    separate_circular_pc = False
+results_subset = loading_df.loc[overlap]
 
-plotter = Plotter(
-    output_path=output_path
+loadings = results_subset['separation_axis_loading'].to_numpy()
+labels   = class_data.loc[overlap, 'connectivity_3_dauer'].to_numpy()
+
+color_map = {
+    'dauer_increased': '#ed2024',
+    'maintained': 'black',
+    'dauer_decreased': '#abdbee',
+    'variable': 'grey',
+    'late_postembryonic': 'grey',
+    'no_synapse': 'grey',
+    'nan': 'grey'
+}
+
+data_range = loadings.max() - loadings.min()
+bin_width  = data_range * 0.005
+
+figure_generator = Plotter(output_path = 'figures/pca_loading')
+figure_generator.plot_pca_loadings(
+    loadings,
+    bin_width,
+    classes = labels,
+    class_order = acceptable_classes,
+    save_as=f'{datatype}_loadings',
+    show_plot=True,
+    flip=True
 )
-if plot_type in ['circular', 'both']:
-    plotter.plot_pca_loadings_circular(
-        loadings, feature_labels, n=n_features_circular,
-        separate=separate_circular_pc,
-        pcs_to_consider=plot_pc,
-        cmap = 'Spectral',
-        save_as=output_file_circle,
-        show_plot=True
-    )
-if plot_type in ['linear', 'both']:
-    plotter.plot_pca_loadings_linear(
-        loadings, feature_labels,
-        n_features_linear, plot_pc,
-        save_as=output_file_linear, show_plot=True
-    )

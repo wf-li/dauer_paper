@@ -1,125 +1,117 @@
+from pathlib import Path
 import networkx as nx
+import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from math import log10
+from analysis_modules.src.neuron_info import ntype, dark_colors
+from analysis_modules.src.data_manager import DataManager
+import pandas as pd
 
-def plot_graph(G, datatype, output_path = './'):
-    fig, ax = plt.subplots(figsize=(10,10))
-    
-    alphas = []
-    edge_weights = []
-    for u,v in G.edges():
-        weight_uv = G[u][v]['weight']
-        if datatype == 'contactome':
-            try:
-                weight_uv = log10(weight_uv)
-                if ((weight_uv-5)/5) > 0.6:
-                    alphas.append(0.6)
-                elif ((weight_uv-5)) < 0.1:
-                    alphas.append(0.1)
-                else:
-                    alphas.append((weight_uv-5)/5)
-            except:
-                raise ValueError(f'{weight_uv} is not a valid weight')
-        if weight_uv > 20:
-            edge_weights.append(5)
-        else:
-            try:
-                edge_weights.append(weight_uv*0.25)
-            except:
-                raise ValueError(f'Edge {u} to edge {v} value error: {G[u][v]['weight']}')
+# parameters
+dataset = 'dauer-1'
+data_type = 'connectome' # 'connectome', 'proximity'
 
-    # Draw the edges first so they appear behind the nodes
-    edge_alpha = 0.4
-    if datatype == 'contactome':
-        edge_alpha = alphas
+output_name = Path(f'cytoscape_graph_{dataset}.png')
 
-    pos = nx.get_node_attributes(G, 'pos')
-    z_orders = nx.get_node_attributes(G, 'z_order')
-    node_color_map = nx.get_node_attributes(G, 'color')
+node_info_path = 'plotting/utils/node_coordinates.csv'
+node_info = pd.read_csv(node_info_path)
+node_info.index = node_info['name']
 
-    nx.draw_networkx_edges(
-        G,
-        pos,
-        ax=ax,
-        alpha=edge_alpha,
-        edge_color='black',
-        width=edge_weights,
-        arrows=False,
-        # arrowstyle='-|>',
-        # arrowsize=6,
-        node_size=300,
-    )
+dm = DataManager(
+    data_path = 'data',
+    include_muscle = True,
+    include_postemb = True,
+    npair_result = True
+)
+data = dm.get_data_edgetable(data_type)
+plot_data = data[dataset].rename('weight')
 
-    # Sort nodes by their z-order to draw them in the correct sequence (higher z-order on top)
-    sorted_nodes = sorted(list(G.nodes()), key=lambda n: z_orders.get(n, 0))
+# data params
+ignore_neurons = ['PVW','PLN','HSN']
+minimum_edge_weight = 2
+ignore_self_edges = True
 
-    # Draw each node individually to respect the z-order
-    for node in sorted_nodes:
-        nx.draw_networkx_nodes(
-            G,
-            pos,
-            nodelist=[node],
-            ax=ax,
-            node_size=300,
-            node_color=node_color_map.get(node, '#808080'),
-            edgecolors = 'white'
-        )
+# plotting params
+n_size_min,n_size_max = 50,300.0
+e_width_min,e_width_max = 0.25,2.5
+e_color_min,e_color_max = 0.8,0.0
 
-    # Create a custom legend for the node types
-    # legend_patches = [mpatches.Patch(color=color, label=label.capitalize()) for label, color in dark_colors.items()]
-    # ax.legend(handles=legend_patches, loc='upper right', fontsize=12, title='Node Types', title_fontsize=14, frameon=True)
-    
-    ax.set_xticks([])
-    ax.set_yticks([])
-    fig.tight_layout()
+# ignore neurons
+plot_data = plot_data[~plot_data.index.get_level_values(0).isin(ignore_neurons)]
+plot_data = plot_data[~plot_data.index.get_level_values(1).isin(ignore_neurons)]
 
-    plt.savefig(f'{output_path}')
+# ignore self edge loop
+if ignore_self_edges:
+    plot_data = plot_data[~(plot_data.index.get_level_values(0) == plot_data.index.get_level_values(1))]
 
-if __name__ == "__main__":
-    datatype = 'connectome' # 'connectome' or 'contactome'
+# set edge weight minimum
+plot_data = plot_data[plot_data >= minimum_edge_weight]
 
-    assert datatype in ['connectome', 'contactome']
+outputs = plot_data.astype(bool).groupby(level=0).sum()
+inputs = plot_data.astype(bool).groupby(level=1).sum()
+node_degree = (outputs+inputs).fillna(0)
 
-    import pandas as pd
-    from analysis_modules.src.data_manager import DataManager
-    from analysis_modules.cytoscape_graph.make_nx_graph import make_graph
-    
-    node_metadata_path = 'analysis_modules/cytoscape_graph/node_metadata.csv'
+G = nx.DiGraph()
+pos = {
+    key: (value['x']*0.8, -value['z'])
+    for key, value in node_info[['x','z']].T.to_dict().items()
+}
 
-    replacements = {
-        "PVWL_or_R_1": "PVWL",
-        "PVWL_or_R_2": "PVWL",
-        "PVWL_or_R_3": "PVWR",
-        "RICRa": "RICR",
-        "RICRp": "RICR"
-    }
+# formulas for variable node size / edge width / edge color
+n_min, n_max = node_degree.min(), node_degree.max()
+e_min, e_max = plot_data.min(), plot_data.max()
 
-    data = DataManager(
-        data_path='data',
-        include_postemb=True,
-        include_muscle=True,
-        npair_result=False,
-        replacements=replacements
-    )
+def _norm(w, lo, hi, gamma=1.0):
+    return float(np.clip((w - lo) / (hi - lo), 0.0, 1.0)) ** gamma
 
-    node_df = pd.read_csv(node_metadata_path)
-    edge_df = data.get_data_edgelist(type=datatype)
+def node_size_formula(w):
+    t = _norm(w, n_min, n_max, gamma=1)
+    r0, r1 = np.sqrt(n_size_min), np.sqrt(n_size_max)
+    return (r0 + t * (r1 - r0)) ** 2
 
-    filter_nodes = [
-        'GLRR','GLRL','GLRDL','GLRDR','GLRVL','GLRVR',
-        'CEPshVR','CEPshVL','CEPshDL','CEPshDR',
-    ]
+def edge_size_formula(w):
+    t = _norm(w, e_min, e_max, gamma=0.7)
+    return e_width_min + t * (e_width_max - e_width_min)
 
-    datasets = [
-        'L2','L3','adult-2','dauer-1','dauer-2'
-    ]
-    if datatype == 'connectome':
-        datasets.extend(['adult-1', 'dauer-daf2'])
-    elif datatype == 'contactome':
-        datasets.append('dauer-3')
+def edge_color_formula(w):
+    t = _norm(w, e_min, e_max, gamma=0.7)
+    g = e_color_min + t * (e_color_max - e_color_min)
+    return (g, g, g, 1-g)
 
-    for dataset in datasets:
-        output_path = f'figures/cytoscape_graphs/{datatype}_graph/{dataset}_graph.png'
-        G = make_graph(node_df, edge_df, dataset = dataset, filter_nodes = filter_nodes)
-        plot_graph(G, datatype, output_path=output_path)
+nodelist = list(node_degree.index)
+node_sizes = np.array([node_size_formula(w) for w in node_degree[nodelist]])
+node_colors = [dark_colors[ntype(n)] for n in nodelist]
+
+# plotting
+fig, ax = plt.subplots(figsize=(6, 6))
+nx.draw_networkx_nodes(
+    G,
+    pos,
+    nodelist=nodelist,
+    node_color=node_colors,
+    node_size=node_sizes,
+    edgecolors = 'White',
+    linewidths = 0.5
+).set_zorder(2)
+
+nx.draw_networkx_edges(
+    G,
+    pos,
+    nodelist=nodelist,
+    node_size=node_sizes,
+    edgelist = plot_data.index,
+    width=[edge_size_formula(w) for w in plot_data],
+    edge_color=[edge_color_formula(w) for w in plot_data],
+    arrows=True,
+    arrowsize=5,
+    arrowstyle="-|>",
+    connectionstyle="arc3,rad=0.05",
+)
+
+plt.axis('off')
+plt.tight_layout()
+
+output_path = Path('figures')
+if not output_path.exists():
+    output_path.mkdir(parents=True, exist_ok=True)
+    print(f"Created directory: {output_path}")
+plt.savefig(output_path / output_name, dpi=300, bbox_inches='tight')
