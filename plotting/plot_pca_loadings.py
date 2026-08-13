@@ -2,47 +2,60 @@ import pandas as pd
 from pathlib import Path
 from plotter import Plotter
 
-datatype = 'connectome'
+# datatype = 'connectome'
 
-loading_path = Path('analysis_modules/pca/outputs')
-loading_file = Path(f'{datatype}_loadings.csv')
-classification_path = Path('data/connectomes/metadata/synapse_neighborhood_classification_table.csv')
+for datatype in ['connectome','proximity']:
+    loading_path = Path('analysis_modules/pca/outputs')
+    loading_file = Path(f'{datatype}_loadings.csv')
+    loading_df = pd.read_csv(loading_path / loading_file, index_col=[0,1])
 
-loading_df = pd.read_csv(loading_path / loading_file, index_col=[0,1])
+    classification_path = Path('data/connectomes/metadata/synapse_neighborhood_classification_table.csv')
+    class_data = pd.read_csv(classification_path, index_col=[0,1])
 
-acceptable_classes = [
-    'dauer_increased','dauer_decreased','maintained',#'variable'
-]
-class_data = pd.read_csv(classification_path, index_col=[0,1])
+    plot_classes = {
+        'connectome': {
+            'classes': ['dauer_increased','dauer_decreased','maintained'],
+            'df_column': 'connectivity_3_dauer'
+        },
+        'proximity':{
+            'classes': ['dauer_increased','dauer_decreased','maintained'],
+            'df_column': 'neighborhood_3_dauer'
+        },
+        'connectome_all':{
+            'classes': ['dauer_increased','dauer_decreased','maintained','variable'],
+            'df_column': 'connectivity_3_dauer'
+        }
+    }
 
-acceptable_index = class_data[class_data['connectivity_3_dauer'].isin(acceptable_classes)].index
-overlap = loading_df.index.intersection(acceptable_index)
+    plot_index = class_data[class_data[plot_classes[datatype]['df_column']].isin(plot_classes[datatype]['classes'])].index
+    overlap = loading_df.index.intersection(plot_index)
 
-results_subset = loading_df.loc[overlap]
+    results_subset = loading_df.loc[overlap]
 
-loadings = results_subset['separation_axis_loading'].to_numpy()
-labels   = class_data.loc[overlap, 'connectivity_3_dauer'].to_numpy()
+    loadings = results_subset['separation_axis_loading'].to_numpy()
+    labels   = class_data.loc[overlap, plot_classes[datatype]['df_column']].to_numpy()
 
-color_map = {
-    'dauer_increased': '#ed2024',
-    'maintained': 'black',
-    'dauer_decreased': '#abdbee',
-    'variable': 'grey',
-    'late_postembryonic': 'grey',
-    'no_synapse': 'grey',
-    'nan': 'grey'
-}
+    color_map = {
+        'dauer_increased': '#ed2024',
+        'maintained': 'black',
+        'dauer_decreased': '#abdbee',
+        'variable': 'grey',
+        'late_postembryonic': 'grey',
+        'no_synapse': 'grey',
+        'nan': 'grey'
+    }
 
-data_range = loadings.max() - loadings.min()
-bin_width  = data_range * 0.005
+    data_range = loadings.max() - loadings.min()
+    bin_width  = data_range * 0.01
 
-figure_generator = Plotter(output_path = 'figures/pca_loading')
-figure_generator.plot_pca_loadings(
-    loadings,
-    bin_width,
-    classes = labels,
-    class_order = acceptable_classes,
-    save_as=f'{datatype}_loadings',
-    show_plot=True,
-    flip=True
-)
+    figure_generator = Plotter(output_path = 'figures/pca_loading')
+    figure_generator.plot_pca_loadings(
+        loadings,
+        bin_width,
+        classes = labels,
+        class_order = plot_classes[datatype]['classes'],
+        save_as=f'{datatype}_loadings',
+        show_plot=True,
+        flip=False,
+        figsize=(5.5,3),
+    )

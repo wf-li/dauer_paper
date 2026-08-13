@@ -52,138 +52,6 @@ class Plotter:
         ax.set_xticklabels(['1', '2', '3', '4'], fontsize=tick_fontsize)
         ax.set_xlabel('Dauer', labelpad=labelpad, fontsize=label_fontsize)
 
-    def plot_boxplot(self, data_df, groupings,
-                    ylabel, ymin, ymax, yticks,
-                    cmap_name='tab10',
-                    group_gap=1.0,
-                    box_width=0.8,
-                    save_as='boxplot',
-                    show_plot=False,
-                    **kwargs):
-        """
-        Generates a vertical boxplot with grouped categories ("supercategories").
-        
-        Boxplots within the same supercategory are plotted next to each other
-        and share a color, with extra spacing between supercategories.
-
-        Args:
-            data_df (pd.DataFrame): DataFrame where each column is a category
-                                    to be plotted.
-            groupings (dict): A dictionary mapping supercategory names (str)
-                              to lists of column names (list of str).
-                              Example:
-                              {
-                                 'Group A': ['col1', 'col2'],
-                                 'Group B': ['col3', 'col4', 'col5']
-                              }
-            ylabel (str): Label for the Y-axis.
-            ymin (float): Minimum value for the Y-axis.
-            ymax (float): Maximum value for the Y-axis.
-            yticks (list): List of tick positions for the Y-axis.
-            save_as (str, optional): Filename (without extension). Defaults: 'boxplot'.
-            cmap_name (str, optional): Matplotlib colormap name for coloring
-                                       supercategories. Defaults: 'tab10'.
-            group_gap (float, optional): The amount of extra spacing (in x-units)
-                                         to add *between* supercategories. Defaults: 1.0.
-            box_width (float, optional): Width of each individual box. Defaults: 0.8.
-            show_plot (bool, optional): If True, calls plt.show(). Defaults: False.
-            **kwargs: Additional keyword arguments passed to ax.boxplot().
-                      Example: showfliers=False
-        """
-        fig, ax = plt.subplots(figsize=(8, 5), dpi=300)
-        
-        try:
-            cmap = cm.get_cmap(cmap_name)
-            colors = [cmap(i) for i in range(len(groupings))]
-        except ValueError:
-            print(f"Warning: Colormap '{cmap_name}' not found. Defaulting to 'tab10'.")
-            cmap = cm.get_cmap('tab10')
-            colors = [cmap(i) for i in range(len(groupings))]
-
-        data_to_plot = []    # List of arrays, one for each box
-        box_positions = []   # X-position for each box
-        box_colors = []      # Color for each box
-        xtick_labels = []    # Label for each supercategory
-        xtick_positions = [] # X-position for each supercategory label
-
-        current_pos = 0.5  # Start at 0.5 for centering
-        
-        # Iterate over the supercategories provided in the groupings dict
-        for i, (group_name, columns) in enumerate(groupings.items()):
-            color = colors[i % len(colors)]
-            xtick_labels.append(group_name)
-            
-            group_start_pos = current_pos
-            
-            # Iterate over the individual columns within this supercategory
-            for col_name in columns:
-                if col_name not in data_df.columns:
-                    print(f"Warning: Column '{col_name}' not found in DataFrame. Skipping.")
-                    continue
-                
-                # Append data (dropping NaNs)
-                data_to_plot.append(data_df[col_name].dropna())
-                box_positions.append(current_pos)
-                box_colors.append(color)
-                
-                current_pos += 1  # Advance position for the next box
-            
-            # Calculate the center position for the supercategory label
-            group_end_pos = current_pos - 1
-            xtick_positions.append((group_start_pos + group_end_pos) / 2)
-            
-            # Add the extra gap *after* a group is plotted
-            current_pos += group_gap
-
-        # --- Plot the boxplots ---
-        
-        # Set default 'showfliers' to False if not provided
-        if 'showfliers' not in kwargs:
-            kwargs['showfliers'] = False
-
-        bplot = ax.boxplot(
-            data_to_plot,
-            positions=box_positions,
-            widths=box_width,
-            patch_artist=True,  # Enable filling boxes with color
-            **kwargs
-        )
-
-        # Color the boxes
-        for patch, color in zip(bplot['boxes'], box_colors):
-            patch.set_facecolor(color)
-            patch.set_edgecolor('black')
-            patch.set_linewidth(self.linewidth / 2)
-
-        # Style medians
-        for median in bplot['medians']:
-            median.set_color('black')
-            median.set_linewidth(self.linewidth)
-
-        # Style whiskers and caps
-        for partname in ('whiskers', 'caps'):
-            for line in bplot[partname]:
-                line.set_color('black')
-                line.set_linewidth(self.linewidth / 2)
-
-        # Style the Axes
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.spines['left'].set_linewidth(self.linewidth)
-        ax.spines['bottom'].set_linewidth(self.linewidth)
-        ax.tick_params(width=self.linewidth, length=6, pad=1)
-
-        ax.set_ylim(ymin, ymax)
-        ax.set_yticks(yticks)
-        ax.set_ylabel(ylabel, labelpad=2, fontsize=14)
-
-        ax.set_xticks(xtick_positions)
-        ax.set_xticklabels(xtick_labels, fontsize=12)
-        ax.tick_params(axis='x', length=0, pad=5)  # Hide tick marks, keep labels
-        ax.set_xlim(left=0, right=current_pos - group_gap) 
-
-        self._save_as(save_as, dpi=300, show=show_plot)
-
     def plot_xy_graph(self, x, y, x_dauer, y_dauer,
                         ylabel, ymin, ymax, yticks,
                         save_as='xy_graph', **kwargs):
@@ -228,7 +96,6 @@ class Plotter:
             raise ValueError("connect_points and best_fit_line are mutually exclusive."
                              " Please set only one to True.")
 
-        # Setup the figure and subplots
         fig, (ax1, ax2) = plt.subplots(
             1, 2,
             figsize=(5, 3),
@@ -251,7 +118,7 @@ class Plotter:
         # Add larval stage annotations
         self._style_staged_x_axis(ax1)
 
-        # Plot the timed data points
+        # Plot the nondauer data points
         ax1.plot(
             x, y,
             color='k', marker='.',
@@ -312,7 +179,7 @@ class Plotter:
 
         self._style_dauer_x_axis(ax2)
         
-        if dauer_lines: # Draw horizontal lines from dauer markersif dauer_lines: 
+        if dauer_lines: # Draw horizontal lines from dauer markers if dauer_lines: 
             if not connect_points and not best_fit_line:
                 print("Warning: dauer_lines=True but no line specified on ax1 "
                       "(connect_points or best_fit_line). Skipping.")
@@ -321,7 +188,6 @@ class Plotter:
                     start_x = 0 # Default intersection x-value
 
                     if connect_points and ax1_line_xs is not None:
-                        # --- Logic for 'connect_points' intersection (as before) ---
                         intersection_x_coords = []
                         for i in range(len(ax1_line_xs) - 1):
                             y1, y2 = ax1_line_ys[i], ax1_line_ys[i+1]
@@ -336,13 +202,11 @@ class Plotter:
                             start_x = max(intersection_x_coords)
 
                     elif best_fit_line and ax1_line_func is not None:
-                        # --- Logic for 'best_fit_line' intersection (new) ---
                         start_x = ax1_line_func(yd)
                         # Ensure the intersection is within the plot bounds
                         xlims = ax1.get_xlim()
                         start_x = np.clip(start_x, xlims[0], xlims[1])
 
-                    # --- This plotting logic is now generic ---
                     if start_x >= ax1.get_xlim()[0]: # Only plot if intersection is valid
                         # Create a connection patch for the horizontal line
                         con = ConnectionPatch(xyA=(xd, yd), xyB=(start_x, yd),
@@ -502,9 +366,6 @@ class Plotter:
         flip = kwargs.get('flip', False)
         s = kwargs.get('s', 10)
         alpha = kwargs.get('alpha', 1)
-
-        data_range = loadings.max() - loadings.min()
-        bin_width  = data_range * 0.005        # column width; raise for fewer/wider bars
 
         x_pos, y_pos, labels_out = stack_binned(
             loadings, bin_width=bin_width, classes=classes, 
