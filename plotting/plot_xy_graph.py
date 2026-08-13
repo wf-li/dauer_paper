@@ -13,24 +13,8 @@ params = pd.read_csv(parameter_path)
 with open(metadata_path, 'r') as f:
     metadata = json.load(f)
 
-plot_names = {
-    'L1-1': 'L1-0hr',
-    'L1-2': 'L1-5hr',
-    'L1-3': 'L1-8hr',
-    'L1-4': 'L1-16hr',
-    'L2': 'L2',
-    'L3': 'L3',
-    'adult-1': 'Adult 1',
-    'adult-2': 'Adult 2',
-    'dauer-1': 1,
-    'dauer-2': 2,
-    'dauer-3': 3,
-    'dauer-daf2': 4
-}
-
-data['plot_name'] = data.index.map(plot_names)
 data['type'] = data.index.map(lambda x: 'dauer' if metadata[x]['stage']=='dauer' else 'nondauer')
-data['timepoint'] = data.index.map(lambda x: metadata[x]['age_hours'] if metadata[x]['stage']!='dauer' else np.nan)
+data['timepoint'] = data.index.map(lambda x: metadata[x]['age_visual'])
 
 for plot_metric in params['variable_name'].values:
     filt = params['variable_name']==plot_metric
@@ -55,7 +39,7 @@ for plot_metric in params['variable_name'].values:
 
     # Filter for dauer data
     filt_dauer = (data['type'] == 'dauer') & ~np.isnan(data[plot_metric])
-    x_dauer = data[filt_dauer]['plot_name'].values.astype(int)
+    x_dauer = data[filt_dauer]['timepoint'].values.astype(int)
     y_dauer = data[filt_dauer][plot_metric].values
 
     # --- Plotting ---

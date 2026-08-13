@@ -17,11 +17,14 @@ def get_missing_neurons(datasets):
     else:
         return ['PVW','PLN','HSN']
 
-def exclude_postemb_edgetable(edgetable, datasets):
+def exclude_postemb_edgetable(edgetable, datasets, force_list=None):
     """
         Remove missing postemb neurons from edgetable
     """
-    exclude_list = get_missing_neurons(datasets)
+    if force_list:
+        exclude_list = force_list
+    else:
+        exclude_list = get_missing_neurons(datasets)
     filt_1 = edgetable.index.get_level_values(0).isin(exclude_list)
     filt_2 = edgetable.index.get_level_values(1).isin(exclude_list)
     return edgetable.loc[~filt_1 & ~filt_2]

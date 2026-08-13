@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import ConnectionPatch
 from matplotlib import cm, colors
+import seaborn as sns
 from collections import defaultdict
 
 class Plotter:
@@ -105,7 +106,6 @@ class Plotter:
         )
 
         # --- LEFT SUBPLOT (ax1): Timed Data Line Graph ---
-        # Configure spines and ticks
         ax1.spines['top'].set_visible(False)
         ax1.spines['right'].set_visible(False)
         ax1.spines['left'].set_linewidth(self.linewidth)
@@ -115,7 +115,7 @@ class Plotter:
         ax1.set_yticks(yticks)
         ax1.set_ylabel(ylabel, labelpad=2, fontsize=14)
 
-        # Add larval stage annotations
+        # Add nondauer x-axis
         self._style_staged_x_axis(ax1)
 
         # Plot the nondauer data points
@@ -142,7 +142,7 @@ class Plotter:
             ax1_line_ys = y_line
 
         elif best_fit_line:
-            # Calculate linear regression: y = mx + b
+            # Calculate linear regression
             m, b = np.polyfit(x, y, 1)
             
             # Create x-values for the line spanning the plot's x-axis
@@ -241,7 +241,6 @@ class Plotter:
         else:
             colors = ['k']*len(ys)
         
-        # Setup the figure and subplots
         fig, (ax1, ax2) = plt.subplots(
             1, 2,
             figsize=(3.5, 6),
@@ -251,8 +250,6 @@ class Plotter:
         )
 
         # --- LEFT SUBPLOT (ax1): Timed Data Line Graph ---
-
-        # Configure spines and ticks
         ax1.spines['top'].set_visible(False)
         ax1.spines['right'].set_visible(False)
         ax1.spines['left'].set_linewidth(self.linewidth)
@@ -262,11 +259,11 @@ class Plotter:
         ax1.set_yticks(yticks)
         ax1.set_ylabel(ylabel, labelpad=2, fontsize=14)
 
-        # Add larval stage annotations
+        # Add nondauer x-axis
         if show_larval_stages:
             self._style_staged_x_axis(ax1)
 
-        # Plot the timed data points
+        # Plot nondauer points
         for i in range(0,len(ys)):
             ax1.scatter(
                 xs, ys[i],
@@ -307,6 +304,50 @@ class Plotter:
             )
 
         self._style_dauer_x_axis(ax2)
+
+        self._save_as(save_as, dpi=300, show=show_plot)
+
+    def plot_cosine_similarity(self, similarity_matrix: np.ndarray,
+                                labels = None, save_as='cosine_similarity',
+                                show_plot = False, **kwargs):
+        """
+        Visualizes the graph similarity matrix as a heatmap.
+
+        Args:
+            similarity_matrix: 2D NumPy array of similarity scores.
+            labels: list of strings to use as labels for the axes.
+        """
+        vmin = kwargs.get('vmin', np.min(similarity_matrix))
+        vmax = kwargs.get('vmax', np.max(similarity_matrix))
+        cmap = kwargs.get('cmap', 'viridis')
+        annot = kwargs.get('annot', False)
+
+        if similarity_matrix.size == 0:
+            print("Similarity matrix is empty. Nothing to visualize.")
+            return
+
+        plt.figure(figsize=(5, 4))
+
+        # Use provided labels for tick labels if available
+        tick_labels = labels if labels else 'auto'
+
+        sns.heatmap(
+            similarity_matrix,
+            cmap=cmap,
+            cbar_kws={'label': 'Similarity Score'},
+            annot=annot,
+            fmt=".2f",
+            annot_kws={"size": 8},
+            xticklabels=tick_labels,
+            yticklabels=tick_labels,
+            vmin=vmin,
+            vmax=vmax
+        )
+
+        if labels:
+            plt.yticks(rotation=0)
+            plt.xticks(fontsize=8)
+            plt.yticks(fontsize=8)
 
         self._save_as(save_as, dpi=300, show=show_plot)
 
@@ -393,160 +434,6 @@ class Plotter:
 
         self._save_as(save_as, dpi=300, show=show_plot)
 
-    def plot_stacked_area(
-                self, plot_data, 
-                ylabel='Proportion', 
-                ymin=0, ymax=1.0, 
-                yticks=[0, 0.2, 0.4, 0.6, 0.8, 1.0],
-                colors=None,
-                save_as='stacked_area_plot', **kwargs):
-            """
-            Generates a two-panel stacked area plot for staged and dauer data.
-
-            The input DataFrame should have categories as rows and timepoints as columns.
-            1. Left (ax1): Displays nondauer (staged) data.
-            2. Right (ax2): Displays dauer data.
-
-            Args:
-                plot_data (pd.DataFrame): DataFrame with categories in rows and
-                                        timepoints (e.g., 'L1-1', 'dauer-1') in columns.
-                ylabel (str, optional): Label for the shared Y-axis. Defaults to 'Proportion'.
-                ymin (float, optional): Y-axis minimum. Defaults to 0.
-                ymax (float, optional): Y-axis maximum. Defaults to 1.0.
-                yticks (list, optional): Y-axis tick positions. Defaults to [0, 0.2, ..., 1.0].
-                colors (list, optional): List of colors for the categories. If None,
-                                        uses the default 'tab10' colormap.
-                save_as (str, optional): Filename (without extension). Defaults to 'stacked_area_plot'.
-                
-                **kwargs:
-                    show_plot (bool, optional): If True, shows the plot. Default: False.
-            """
-            show_plot = kwargs.get('show_plot', False)
-
-            # --- 1. Data Preparation ---
-            # Define the hardcoded x-positions for staged and dauer timepoints
-            staged_cols_map = {
-                'L1-1': 0, 'L1-2': 5, 'L1-3': 8, 'L1-4': 16,
-                'L2': 23, 'L3': 27, 'adult-1': 55, 'adult-2': 55
-            }
-            dauer_cols_map = {
-                'dauer-1': 1, 'dauer-2': 2, 'dauer-daf2': 4
-            }
-
-            # Find which columns from our map are *actually* in the DataFrame
-            staged_cols_present = [col for col in staged_cols_map if col in plot_data.columns]
-            dauer_cols_present = [col for col in dauer_cols_map if col in plot_data.columns]
-
-            # Sort the present columns by their x-position to ensure correct plotting order
-            staged_cols_sorted = sorted(staged_cols_present, key=lambda col: staged_cols_map[col])
-            dauer_cols_sorted = sorted(dauer_cols_present, key=lambda col: dauer_cols_map[col])
-
-            # Get the corresponding x-values for the plot
-            x_staged = [staged_cols_map[col] for col in staged_cols_sorted]
-            x_dauer = [dauer_cols_map[col] for col in dauer_cols_sorted]
-
-            # Get the data subsets
-            data_staged = plot_data[staged_cols_sorted]
-            data_dauer = plot_data[dauer_cols_sorted]
-            
-            # Get labels (categories) and set up colors
-            labels = plot_data.index.tolist()
-            n_categories = len(labels)
-
-            if colors is None:
-                # Use a default categorical colormap
-                cmap = plt.get_cmap('tab10')
-                plot_colors = [cmap(i) for i in range(n_categories)]
-            else:
-                if len(colors) < n_categories:
-                    raise ValueError(f"Not enough colors. Need {n_categories}, got {len(colors)}")
-                plot_colors = colors[:n_categories]
-
-            # --- 2. Plot Setup ---
-            # Setup the figure and subplots
-            fig, (ax1, ax2) = plt.subplots(
-                1, 2,
-                figsize=(5.5, 3.2),  # Slightly wider/taller to accommodate legend
-                dpi=300,
-                sharey=True,
-                gridspec_kw={'width_ratios': [3, 1], 'wspace': 0.05}
-            )
-
-            # --- 3. LEFT SUBPLOT (ax1): Timed Data Stacked Area ---
-            # Configure spines and ticks
-            ax1.spines['top'].set_visible(False)
-            ax1.spines['right'].set_visible(False)
-            ax1.spines['left'].set_linewidth(self.linewidth)
-            ax1.spines['bottom'].set_linewidth(self.linewidth)
-            ax1.tick_params(width=self.linewidth, length=6, pad=1)
-            ax1.set_ylim(ymin, ymax)
-            ax1.set_yticks(yticks)
-            ax1.set_ylabel(ylabel, labelpad=2, fontsize=14)
-
-            # Add larval stage annotations
-            self._style_staged_x_axis(ax1)
-
-            # Plot the staged stacked area
-            # stackplot wants data as (categories, x-points)
-            poly_collection = ax1.stackplot(
-                x_staged,
-                data_staged.values,
-                labels=labels,
-                colors=plot_colors,
-                linewidth=0.25,
-                edgecolor='white'
-            )
-
-            # --- 4. RIGHT SUBPLOT (ax2): Dauer Data Stacked Area ---
-
-            ax2.spines['top'].set_visible(False)
-            ax2.spines['right'].set_visible(False)
-            ax2.spines['left'].set_visible(False)
-            ax2.spines['bottom'].set_linewidth(self.linewidth)
-            ax2.tick_params(axis='y', length=0)  # Hide y-tick marks
-            ax2.tick_params(axis='x', length=3, width=self.linewidth)
-
-            # Plot the dauer stacked area
-            bottom_tracker = np.zeros(len(x_dauer))
-            bar_width = 0.8  # Width of the bars
-            for i in range(n_categories):
-                category_data = data_dauer.values[i]
-                color = plot_colors[i]
-                
-                ax2.bar(
-                    x_dauer,
-                    category_data,
-                    bottom=bottom_tracker,
-                    color=color,
-                    width=bar_width,
-                    linewidth=0.25,
-                    edgecolor='white'
-                )
-                
-                # Update the bottom for the next category
-                bottom_tracker += category_data
-
-            # Configure x-axis for dauer plot
-            self._style_dauer_x_axis(ax2)
-
-            # --- 5. Legend and Finalization ---
-            # Add a shared legend above the plots
-            fig.legend(
-                poly_collection, labels,  # Use artists and labels from ax1
-                loc='lower center',         # Anchor point of the legend
-                bbox_to_anchor=(0.5, 0.95), # Position: (x=50% fig, y=95% fig)
-                ncol=n_categories,          # All categories in one row
-                frameon=False,
-                fontsize=9
-            )
-
-            # Ensure ax1 (and its patches) are on top
-            ax1.set_zorder(ax2.get_zorder()+1)
-            ax1.patch.set_visible(False)  # Make ax1 transparent
-
-            self._save_as(save_as, dpi=300, show=show_plot)
-            plt.close(fig)
-
     def plot_violin_graph(
             self, data_nondauer, x_nondauer, data_dauer, x_dauer,
             ylabel, ymin, ymax, yticks, save_as='violin'):
@@ -568,7 +455,6 @@ class Plotter:
             yticks (list): List of tick positions for the Y-axis.
             save_as (str, optional): Filename (without extension). Defaults: 'plot'.
         """
-        # Setup the figure and subplots
         fig, (ax1, ax2) = plt.subplots(
             1, 2,
             figsize=(5, 3),
@@ -580,8 +466,6 @@ class Plotter:
         dauer_color = '#90D5FF'
 
         # --- LEFT SUBPLOT (ax1): Timed Data Violin Plot ---
-
-        # Configure spines and ticks
         ax1.spines['top'].set_visible(False)
         ax1.spines['right'].set_visible(False)
         ax1.spines['left'].set_linewidth(self.linewidth)
@@ -660,7 +544,6 @@ class Plotter:
         # Configure x-axis for dauer plot
         self._style_dauer_x_axis(ax2)
 
-        # --- Finalize and Save ---
         ax1.set_zorder(ax2.get_zorder()+1) # Ensure ax1 (and its patches) are on top
         ax1.patch.set_visible(False) # Make ax1 transparent
 
@@ -668,6 +551,8 @@ class Plotter:
 
 def stack_binned(x, bin_width, classes=None, class_order=None):
     """
+    Helper function for PCA loading plot
+
     Bin 1D values into fixed-width x-columns and stack them into a
     histogram-like swarm. Within each column points are grouped by class
     (so colors stay contiguous) and fill from the bottom up (lowest free slot).
