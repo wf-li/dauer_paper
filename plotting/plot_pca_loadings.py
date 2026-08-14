@@ -58,5 +58,6 @@ for datatype in ['connectome','proximity']:
         save_as=f'{datatype}_loadings',
         show_plot=True,
         flip=False,
-        figsize=(5.5,3),
+        figsize=(5,3),
+        alpha=1
     )

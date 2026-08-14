@@ -5,6 +5,10 @@ import pandas as pd
 from pathlib import Path
 from ..src.neuron_info import ntype, npair, is_postemb
 
+column_order = [
+    'L1-1','L1-2','L1-3','L1-4','L2','L3',
+    'adult-1','adult-2','dauer-1','dauer-2','dauer-3','dauer-daf2'
+]
 class DataManager:
     def __init__(self, data_path, **kwargs):
         """
@@ -155,6 +159,8 @@ class DataManager:
         G = pd.concat(dfs, axis=0).fillna(0)
         G = G.astype(int)
         G = G.groupby(level=[0,1]).sum()
+        ordered_cols = [col for col in column_order if col in G.columns]
+        G = G[ordered_cols]
 
         # remove duplicates in symmetrical matrices
         if datatype == 'contactome': 
