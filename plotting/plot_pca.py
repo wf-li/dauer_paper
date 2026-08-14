@@ -4,7 +4,7 @@ from pathlib import Path
 from matplotlib.colors import ListedColormap
 from plotter import Plotter
 
-pca_root = Path('../analysis_modules/pca')
+pca_root = Path('analysis_modules/pca/outputs')
 pca_components = 2
 
 dataset_selection = {
