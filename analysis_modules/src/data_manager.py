@@ -278,7 +278,7 @@ class DataManager:
     def specify_proximity_points_dir(self, directory_path, ext = '.csv'):
         """Proximity point matrices are downloaded separately for speed and convenience."""
         self.dirs['proximity_points'] = Path(directory_path)
-        self.files['proximity_points'] = self._list_files(self, directory_path, ext)
+        self.files['proximity_points'] = self._list_files(directory_path, ext)
         print(f"Set proximity points directory as {directory_path}.")
 
     def get_proximity_points(self, **kwargs):
